@@ -3,99 +3,88 @@
 
 namespace
 {
-    const juce::Colour backgroundColour  { 18, 21, 29 };
-    const juce::Colour panelColour       { 28, 33, 44 };
-    const juce::Colour panelLightColour  { 38, 45, 59 };
-    const juce::Colour accentColour      { 64, 211, 190 };
-    const juce::Colour textColour        { 239, 243, 250 };
-    const juce::Colour mutedColour       { 151, 163, 181 };
-    const juce::Colour dangerColour      { 235, 105, 105 };
+    const juce::Colour bg       { 17, 20, 28 };
+    const juce::Colour panel    { 28, 33, 44 };
+    const juce::Colour buttonBg { 43, 50, 64 };
+    const juce::Colour accent   { 60, 220, 190 };
+    const juce::Colour white    { 240, 244, 250 };
+    const juce::Colour muted    { 150, 163, 180 };
 
-    juce::String midiNoteName (int midiNote)
+    juce::String noteName (int midi)
     {
-        static const char* names[] =
-        {
+        static const char* notes[] {
             "C", "C#", "D", "D#", "E", "F",
             "F#", "G", "G#", "A", "A#", "B"
         };
 
-        const int note = ((midiNote % 12) + 12) % 12;
-        const int octave = midiNote / 12 - 1;
-
-        return juce::String (names[note]) + juce::String (octave);
+        return juce::String (notes[((midi % 12) + 12) % 12])
+             + juce::String (midi / 12 - 1);
     }
 }
 
-//==============================================================================
 RrHarmonizerAudioProcessorEditor::RrHarmonizerAudioProcessorEditor
     (RrHarmonizerAudioProcessor& p)
     : AudioProcessorEditor (&p), processor (p)
 {
-    setSize (1000, 620);
+    setSize (1100, 700);
     setResizable (true, true);
-    setResizeLimits (820, 540, 1500, 950);
+    setResizeLimits (1000, 650, 1500, 950);
 
-    // Header
+    auto heading = [this] (juce::Label& l, const juce::String& text)
+    {
+        l.setText (text, juce::dontSendNotification);
+        l.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+        l.setColour (juce::Label::textColourId, accent);
+        addAndMakeVisible (l);
+    };
+
     title.setText ("RR HARMONIZER", juce::dontSendNotification);
-    title.setFont (juce::Font (juce::FontOptions (25.0f, juce::Font::bold)));
-    title.setColour (juce::Label::textColourId, textColour);
+    title.setFont (juce::Font (juce::FontOptions (26.0f, juce::Font::bold)));
+    title.setColour (juce::Label::textColourId, white);
     addAndMakeVisible (title);
 
     pitchTab.setText ("VOCAL HARMONY ENGINE", juce::dontSendNotification);
     pitchTab.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
-    pitchTab.setColour (juce::Label::textColourId, accentColour);
+    pitchTab.setColour (juce::Label::textColourId, accent);
     addAndMakeVisible (pitchTab);
 
-    // Section headings
-    const auto setupHeading = [this] (juce::Label& label, const juce::String& text)
-    {
-        label.setText (text, juce::dontSendNotification);
-        label.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
-        label.setColour (juce::Label::textColourId, accentColour);
-        addAndMakeVisible (label);
-    };
+    heading (sectionInput, "INPUT / KEY");
+    heading (sectionHarmony, "HARMONY ENGINE");
+    heading (sectionVoices, "VOICE MIX");
+    heading (sectionTone, "VOICE CHARACTER");
+    heading (sectionOutput, "OUTPUT");
 
-    setupHeading (sectionInput,   "INPUT / KEY");
-    setupHeading (sectionHarmony, "HARMONY ENGINE");
-    setupHeading (sectionVoices,  "VOICE MIX");
-    setupHeading (sectionTone,    "VOICE CHARACTER");
-    setupHeading (sectionOutput,  "OUTPUT");
-
-    // Readouts
     pitchReadout.setText ("PITCH: --", juce::dontSendNotification);
     pitchReadout.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
-    pitchReadout.setColour (juce::Label::textColourId, textColour);
-    pitchReadout.setJustificationType (juce::Justification::centredLeft);
+    pitchReadout.setColour (juce::Label::textColourId, white);
     addAndMakeVisible (pitchReadout);
 
     statusReadout.setText ("READY", juce::dontSendNotification);
     statusReadout.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
-    statusReadout.setColour (juce::Label::textColourId, accentColour);
+    statusReadout.setColour (juce::Label::textColourId, accent);
     addAndMakeVisible (statusReadout);
 
     noteHeading.setText ("INTERVAL", juce::dontSendNotification);
     levelHeading.setText ("LEVEL", juce::dontSendNotification);
     panHeading.setText ("PAN", juce::dontSendNotification);
-    outHeading.setText ("DRY / HARMONY", juce::dontSendNotification);
+    outHeading.setText ("OUTPUT SETTINGS", juce::dontSendNotification);
 
-    for (auto* label : { &noteHeading, &levelHeading, &panHeading, &outHeading })
+    for (auto* l : { &noteHeading, &levelHeading, &panHeading, &outHeading })
     {
-        label->setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
-        label->setColour (juce::Label::textColourId, mutedColour);
-        addAndMakeVisible (*label);
+        l->setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
+        l->setColour (juce::Label::textColourId, muted);
+        addAndMakeVisible (*l);
     }
 
-    noPitch.setText ("Sing into your input to detect pitch", juce::dontSendNotification);
-    noPitch.setFont (juce::Font (juce::FontOptions (11.0f)));
-    noPitch.setColour (juce::Label::textColourId, mutedColour);
+    noPitch.setText ("Sing into your input to detect pitch",
+                     juce::dontSendNotification);
+    noPitch.setColour (juce::Label::textColourId, muted);
     addAndMakeVisible (noPitch);
 
-    chordSourceLabel.setText ("HARMONY MODE", juce::dontSendNotification);
-    chordSourceLabel.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
-    chordSourceLabel.setColour (juce::Label::textColourId, mutedColour);
+    chordSourceLabel.setText ("CONTROL SOURCE", juce::dontSendNotification);
+    chordSourceLabel.setColour (juce::Label::textColourId, muted);
     addAndMakeVisible (chordSourceLabel);
 
-    // Comboboxes
     setupCombo (key, "key",
         { "C", "C#", "D", "D#", "E", "F",
           "F#", "G", "G#", "A", "A#", "B" });
@@ -113,92 +102,78 @@ RrHarmonizerAudioProcessorEditor::RrHarmonizerAudioProcessorEditor
     comboAttachments[2] =
         std::make_unique<ComboAttachment> (processor.parameters, "source", source);
 
-    // Global controls
-    setupSlider (gate,       "gate",       "Gate");
-    setupSlider (response,   "response",   "Response");
-    setupSlider (pitchLock,  "pitchLock",  "Pitch Lock");
-    setupSlider (glide,      "glide",      "Glide");
-    setupSlider (humanize,   "humanize",   "Humanize");
-    setupSlider (formant,    "formant",    "Formant");
+    setupSlider (gate, "gate", "Gate");
+    setupSlider (response, "response", "Response");
+    setupSlider (pitchLock, "pitchLock", "Pitch Lock");
+    setupSlider (glide, "glide", "Glide");
+    setupSlider (humanize, "humanize", "Humanize");
+    setupSlider (formant, "formant", "Formant");
     setupSlider (consonants, "consonants", "Consonants");
-    setupSlider (dry,        "dry",        "Dry Level");
-    setupSlider (harmony,    "harmony",    "Harmony Level");
+    setupSlider (dry, "dry", "Dry Level");
+    setupSlider (harmony, "harmony", "Harmony Level");
 
-    int attachmentIndex = 0;
+    int ai = 0;
 
-    sliderAttachments[attachmentIndex++] =
-        std::make_unique<SliderAttachment> (processor.parameters, "gate", gate);
-    sliderAttachments[attachmentIndex++] =
-        std::make_unique<SliderAttachment> (processor.parameters, "response", response);
-    sliderAttachments[attachmentIndex++] =
-        std::make_unique<SliderAttachment> (processor.parameters, "pitchLock", pitchLock);
-    sliderAttachments[attachmentIndex++] =
-        std::make_unique<SliderAttachment> (processor.parameters, "glide", glide);
-    sliderAttachments[attachmentIndex++] =
-        std::make_unique<SliderAttachment> (processor.parameters, "humanize", humanize);
-    sliderAttachments[attachmentIndex++] =
-        std::make_unique<SliderAttachment> (processor.parameters, "formant", formant);
-    sliderAttachments[attachmentIndex++] =
-        std::make_unique<SliderAttachment> (processor.parameters, "consonants", consonants);
-    sliderAttachments[attachmentIndex++] =
-        std::make_unique<SliderAttachment> (processor.parameters, "dry", dry);
-    sliderAttachments[attachmentIndex++] =
-        std::make_unique<SliderAttachment> (processor.parameters, "harmony", harmony);
+    const juce::String globalIDs[] {
+        "gate", "response", "pitchLock", "glide", "humanize",
+        "formant", "consonants", "dry", "harmony"
+    };
 
-    // Voice controls
+    juce::Slider* globalSliders[] {
+        &gate, &response, &pitchLock, &glide, &humanize,
+        &formant, &consonants, &dry, &harmony
+    };
+
+    for (int i = 0; i < 9; ++i)
+        sliderAttachments[(size_t) ai++] =
+            std::make_unique<SliderAttachment> (
+                processor.parameters, globalIDs[i], *globalSliders[i]);
+
     for (int i = 0; i < 4; ++i)
     {
-        const int voiceNumber = i + 1;
+        const auto n = juce::String (i + 1);
 
-        voiceLabels[(size_t) i].setText ("VOICE " + juce::String (voiceNumber),
+        voiceLabels[(size_t) i].setText ("VOICE " + n,
                                          juce::dontSendNotification);
         voiceLabels[(size_t) i].setFont (
-            juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
+            juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
         voiceLabels[(size_t) i].setColour (
-            juce::Label::textColourId, textColour);
+            juce::Label::textColourId, white);
+        voiceLabels[(size_t) i].setJustificationType (
+            juce::Justification::centred);
         addAndMakeVisible (voiceLabels[(size_t) i]);
 
-        intervalLabels[(size_t) i].setText ("0 st", juce::dontSendNotification);
-        intervalLabels[(size_t) i].setFont (juce::Font (juce::FontOptions (11.0f)));
+        intervalLabels[(size_t) i].setText ("0 st",
+                                            juce::dontSendNotification);
         intervalLabels[(size_t) i].setColour (
-            juce::Label::textColourId, textColour);
+            juce::Label::textColourId, accent);
         intervalLabels[(size_t) i].setJustificationType (
             juce::Justification::centred);
         addAndMakeVisible (intervalLabels[(size_t) i]);
 
-        noteLabels[(size_t) i].setText ("VOICE " + juce::String (voiceNumber),
+        noteLabels[(size_t) i].setText ("VOICE " + n,
                                         juce::dontSendNotification);
-        noteLabels[(size_t) i].setFont (juce::Font (juce::FontOptions (10.0f)));
         noteLabels[(size_t) i].setColour (
-            juce::Label::textColourId, mutedColour);
+            juce::Label::textColourId, muted);
         noteLabels[(size_t) i].setJustificationType (
             juce::Justification::centred);
         addAndMakeVisible (noteLabels[(size_t) i]);
 
-        setupSlider (interval[(size_t) i],
-                     "interval" + juce::String (voiceNumber), "Interval", false);
-        setupSlider (level[(size_t) i],
-                     "level" + juce::String (voiceNumber), "Level", true);
-        setupSlider (pan[(size_t) i],
-                     "pan" + juce::String (voiceNumber), "Pan", false);
+        setupSlider (interval[(size_t) i], "interval" + n, "Interval", false);
+        setupSlider (level[(size_t) i], "level" + n, "Level", true);
+        setupSlider (pan[(size_t) i], "pan" + n, "Pan", false);
 
-        sliderAttachments[attachmentIndex++] =
+        sliderAttachments[(size_t) ai++] =
             std::make_unique<SliderAttachment> (
-                processor.parameters,
-                "interval" + juce::String (voiceNumber),
-                interval[(size_t) i]);
+                processor.parameters, "interval" + n, interval[(size_t) i]);
 
-        sliderAttachments[attachmentIndex++] =
+        sliderAttachments[(size_t) ai++] =
             std::make_unique<SliderAttachment> (
-                processor.parameters,
-                "level" + juce::String (voiceNumber),
-                level[(size_t) i]);
+                processor.parameters, "level" + n, level[(size_t) i]);
 
-        sliderAttachments[attachmentIndex++] =
+        sliderAttachments[(size_t) ai++] =
             std::make_unique<SliderAttachment> (
-                processor.parameters,
-                "pan" + juce::String (voiceNumber),
-                pan[(size_t) i]);
+                processor.parameters, "pan" + n, pan[(size_t) i]);
 
         interval[(size_t) i].onValueChange = [this, i]
         {
@@ -207,7 +182,7 @@ RrHarmonizerAudioProcessorEditor::RrHarmonizerAudioProcessorEditor
                 juce::dontSendNotification);
         };
 
-        intervalDown[(size_t) i].setButtonText ("−");
+        intervalDown[(size_t) i].setButtonText ("-");
         intervalUp[(size_t) i].setButtonText ("+");
         styleButton (intervalDown[(size_t) i]);
         styleButton (intervalUp[(size_t) i]);
@@ -216,38 +191,32 @@ RrHarmonizerAudioProcessorEditor::RrHarmonizerAudioProcessorEditor
         {
             saveUndoState();
             interval[(size_t) i].setValue (
-                interval[(size_t) i].getValue() - 1.0,
-                juce::sendNotificationSync);
+                interval[(size_t) i].getValue() - 1.0);
         };
 
         intervalUp[(size_t) i].onClick = [this, i]
         {
             saveUndoState();
             interval[(size_t) i].setValue (
-                interval[(size_t) i].getValue() + 1.0,
-                juce::sendNotificationSync);
+                interval[(size_t) i].getValue() + 1.0);
         };
 
         addAndMakeVisible (intervalDown[(size_t) i]);
         addAndMakeVisible (intervalUp[(size_t) i]);
     }
 
-    // Mode selection
-    modeButtons[0].setButtonText ("SCALE");
-    modeButtons[1].setButtonText ("CHORD");
-    modeButtons[2].setButtonText ("FIXED");
+    const juce::String modeNames[] { "SCALE", "CHORD", "FIXED" };
 
     for (int i = 0; i < 3; ++i)
     {
+        modeButtons[(size_t) i].setButtonText (modeNames[i]);
         styleButton (modeButtons[(size_t) i]);
 
         modeButtons[(size_t) i].onClick = [this, i]
         {
             saveUndoState();
-            if (auto* parameter = processor.parameters.getParameter ("mode"))
-                parameter->setValueNotifyingHost (
-                    (float) i / 2.0f);
-
+            if (auto* p = processor.parameters.getParameter ("mode"))
+                p->setValueNotifyingHost ((float) i / 2.0f);
             updateModeButtons();
         };
 
@@ -258,10 +227,10 @@ RrHarmonizerAudioProcessorEditor::RrHarmonizerAudioProcessorEditor
     autoButton.setButtonText ("AUTO");
     sourcePlus.setButtonText ("+");
 
-    for (auto* button : { &manualButton, &autoButton, &sourcePlus })
+    for (auto* b : { &manualButton, &autoButton, &sourcePlus })
     {
-        styleButton (*button);
-        addAndMakeVisible (*button);
+        styleButton (*b);
+        addAndMakeVisible (*b);
     }
 
     manualButton.onClick = [this]
@@ -281,33 +250,29 @@ RrHarmonizerAudioProcessorEditor::RrHarmonizerAudioProcessorEditor
     sourcePlus.onClick = [this]
     {
         saveUndoState();
-        const int next = source.getSelectedId() == 1 ? 2 : 1;
-        source.setSelectedId (next, juce::sendNotificationSync);
+        source.setSelectedId (source.getSelectedId() == 1 ? 2 : 1,
+                              juce::sendNotificationSync);
         updateSourceButtons();
     };
 
-    // Latency buttons
-    latencyButtons[0].setButtonText ("LOW");
-    latencyButtons[1].setButtonText ("MID");
-    latencyButtons[2].setButtonText ("HIGH");
+    const juce::String latencyNames[] { "LOW", "MID", "HIGH" };
 
     for (int i = 0; i < 3; ++i)
     {
+        latencyButtons[(size_t) i].setButtonText (latencyNames[i]);
         styleButton (latencyButtons[(size_t) i]);
 
         latencyButtons[(size_t) i].onClick = [this, i]
         {
             saveUndoState();
-            if (auto* parameter = processor.parameters.getParameter ("latency"))
-                parameter->setValueNotifyingHost ((float) i / 2.0f);
-
+            if (auto* p = processor.parameters.getParameter ("latency"))
+                p->setValueNotifyingHost ((float) i / 2.0f);
             updateLatencyButtons();
         };
 
         addAndMakeVisible (latencyButtons[(size_t) i]);
     }
 
-    // Voice count buttons
     for (int i = 0; i < 4; ++i)
     {
         countButtons[(size_t) i].setButtonText (juce::String (i + 1));
@@ -316,21 +281,19 @@ RrHarmonizerAudioProcessorEditor::RrHarmonizerAudioProcessorEditor
         countButtons[(size_t) i].onClick = [this, i]
         {
             saveUndoState();
-            if (auto* parameter = processor.parameters.getParameter ("voices"))
-                parameter->setValueNotifyingHost ((float) i / 3.0f);
-
+            if (auto* p = processor.parameters.getParameter ("voices"))
+                p->setValueNotifyingHost ((float) i / 3.0f);
             updateVoiceButtons();
         };
 
         addAndMakeVisible (countButtons[(size_t) i]);
     }
 
-    // Utility buttons
-    for (auto* button : { &undo, &redo, &copy, &paste, &reset,
-                          &bypass, &resetWindow })
+    for (auto* b : { &undo, &redo, &copy, &paste, &reset,
+                     &bypass, &resetWindow })
     {
-        styleButton (*button);
-        addAndMakeVisible (*button);
+        styleButton (*b);
+        addAndMakeVisible (*b);
     }
 
     undo.onClick = [this] { performUndo(); };
@@ -338,28 +301,24 @@ RrHarmonizerAudioProcessorEditor::RrHarmonizerAudioProcessorEditor
 
     copy.onClick = [this]
     {
-        auto state = processor.parameters.copyState();
-        std::unique_ptr<juce::XmlElement> xml (state.createXml());
-
+        std::unique_ptr<juce::XmlElement> xml (
+            processor.parameters.copyState().createXml());
         if (xml != nullptr)
             juce::SystemClipboard::copyTextToClipboard (xml->toString());
     };
 
     paste.onClick = [this]
     {
-        const auto text = juce::SystemClipboard::getTextFromClipboard();
         std::unique_ptr<juce::XmlElement> xml (
-            juce::XmlDocument::parse (text));
+            juce::XmlDocument::parse (
+                juce::SystemClipboard::getTextFromClipboard()));
 
         if (xml != nullptr
             && xml->hasTagName (processor.parameters.state.getType().toString()))
         {
             saveUndoState();
-            auto tree = juce::ValueTree::fromXml (*xml);
-
-            if (tree.isValid())
-                processor.parameters.replaceState (tree);
-
+            processor.parameters.replaceState (
+                juce::ValueTree::fromXml (*xml));
             updateModeButtons();
             updateVoiceButtons();
             updateLatencyButtons();
@@ -372,51 +331,33 @@ RrHarmonizerAudioProcessorEditor::RrHarmonizerAudioProcessorEditor
     bypass.onClick = [this]
     {
         saveUndoState();
+        auto* p = processor.parameters.getParameter ("bypass");
 
-        if (auto* parameter = processor.parameters.getParameter ("bypass"))
-        {
-            const bool currentlyBypassed =
-                parameter->getValue() >= 0.5f;
+        if (p != nullptr)
+            p->setValueNotifyingHost (p->getValue() >= 0.5f ? 0.0f : 1.0f);
 
-            parameter->setValueNotifyingHost (
-                currentlyBypassed ? 0.0f : 1.0f);
-        }
-
-        const bool isBypassed =
+        const bool active =
             processor.parameters.getRawParameterValue ("bypass")->load() >= 0.5f;
 
-        bypass.setButtonText (isBypassed ? "BYPASSED" : "BYPASS");
-        bypass.setColour (
-            juce::TextButton::buttonColourId,
-            isBypassed ? dangerColour : panelLightColour);
+        bypass.setButtonText (active ? "BYPASSED" : "BYPASS");
+        styleButton (bypass, active);
     };
 
-    resetWindow.onClick = [this]
+    resetWindow.onClick = [this] { setSize (1100, 700); };
+
+    auto undoOnDrag = [this] (juce::Slider& s)
     {
-        setSize (1000, 620);
+        s.onDragStart = [this] { saveUndoState(); };
     };
 
-    // Slider changes are captured before the user starts dragging.
-    auto attachUndoOnDrag = [this] (juce::Slider& slider)
-    {
-        slider.onDragStart = [this] { saveUndoState(); };
-    };
-
-    attachUndoOnDrag (gate);
-    attachUndoOnDrag (response);
-    attachUndoOnDrag (pitchLock);
-    attachUndoOnDrag (glide);
-    attachUndoOnDrag (humanize);
-    attachUndoOnDrag (formant);
-    attachUndoOnDrag (consonants);
-    attachUndoOnDrag (dry);
-    attachUndoOnDrag (harmony);
+    for (auto* s : globalSliders)
+        undoOnDrag (*s);
 
     for (int i = 0; i < 4; ++i)
     {
-        attachUndoOnDrag (interval[(size_t) i]);
-        attachUndoOnDrag (level[(size_t) i]);
-        attachUndoOnDrag (pan[(size_t) i]);
+        undoOnDrag (interval[(size_t) i]);
+        undoOnDrag (level[(size_t) i]);
+        undoOnDrag (pan[(size_t) i]);
     }
 
     updateModeButtons();
@@ -424,84 +365,72 @@ RrHarmonizerAudioProcessorEditor::RrHarmonizerAudioProcessorEditor
     updateLatencyButtons();
     updateSourceButtons();
     updatePitchReadout();
-
-    // Store the initial state so the undo system starts with a valid snapshot.
-    undoHistory.clear();
-    redoHistory.clear();
 }
 
-//==============================================================================
 void RrHarmonizerAudioProcessorEditor::setupSlider
-    (juce::Slider& slider, const juce::String& parameterID,
+    (juce::Slider& s, const juce::String& id,
      const juce::String& label, bool rotary)
 {
-    slider.setName (label);
-    slider.setTooltip (label);
-    slider.setColour (juce::Slider::textBoxTextColourId, textColour);
-    slider.setColour (juce::Slider::textBoxBackgroundColourId, panelColour);
-    slider.setColour (juce::Slider::textBoxOutlineColourId, panelLightColour);
-    slider.setColour (juce::Slider::rotarySliderFillColourId, accentColour);
-    slider.setColour (juce::Slider::rotarySliderOutlineColourId, panelLightColour);
-    slider.setColour (juce::Slider::thumbColourId, accentColour);
-    slider.setColour (juce::Slider::trackColourId, accentColour);
-    slider.setColour (juce::Slider::backgroundColourId, panelLightColour);
+    s.setName (label);
+    s.setTooltip (label);
+    s.setColour (juce::Slider::textBoxTextColourId, white);
+    s.setColour (juce::Slider::textBoxBackgroundColourId, panel);
+    s.setColour (juce::Slider::textBoxOutlineColourId, buttonBg);
+    s.setColour (juce::Slider::rotarySliderFillColourId, accent);
+    s.setColour (juce::Slider::rotarySliderOutlineColourId, buttonBg);
+    s.setColour (juce::Slider::thumbColourId, accent);
+    s.setColour (juce::Slider::trackColourId, accent);
+    s.setColour (juce::Slider::backgroundColourId, buttonBg);
 
     if (rotary)
     {
-        slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-        slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 64, 20);
+        s.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+        s.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 62, 20);
     }
     else
     {
-        slider.setSliderStyle (juce::Slider::LinearHorizontal);
-        slider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 48, 20);
+        s.setSliderStyle (juce::Slider::LinearHorizontal);
+        s.setTextBoxStyle (juce::Slider::TextBoxRight, false, 42, 20);
     }
 
-    addAndMakeVisible (slider);
+    addAndMakeVisible (s);
 }
 
 void RrHarmonizerAudioProcessorEditor::setupCombo
-    (juce::ComboBox& combo, const juce::String& parameterID,
+    (juce::ComboBox& c, const juce::String& id,
      const juce::StringArray& items)
 {
-    combo.clear();
+    c.clear();
 
     for (int i = 0; i < items.size(); ++i)
-        combo.addItem (items[i], i + 1);
+        c.addItem (items[i], i + 1);
 
-    combo.setTooltip (parameterID);
-    combo.setColour (juce::ComboBox::backgroundColourId, panelLightColour);
-    combo.setColour (juce::ComboBox::textColourId, textColour);
-    combo.setColour (juce::ComboBox::outlineColourId, mutedColour);
-    combo.setColour (juce::ComboBox::arrowColourId, accentColour);
-    addAndMakeVisible (combo);
+    c.setTooltip (id);
+    c.setColour (juce::ComboBox::backgroundColourId, buttonBg);
+    c.setColour (juce::ComboBox::textColourId, white);
+    c.setColour (juce::ComboBox::outlineColourId, muted);
+    c.setColour (juce::ComboBox::arrowColourId, accent);
+    addAndMakeVisible (c);
 }
 
 void RrHarmonizerAudioProcessorEditor::styleButton
-    (juce::TextButton& button, bool selected)
+    (juce::TextButton& b, bool selected)
 {
-    button.setClickingTogglesState (false);
-    button.setColour (
-        juce::TextButton::buttonColourId,
-        selected ? accentColour : panelLightColour);
-    button.setColour (
-        juce::TextButton::textColourOffId,
-        selected ? backgroundColour : textColour);
-    button.setColour (
-        juce::TextButton::textColourOnId, backgroundColour);
-    button.setColour (
-        juce::TextButton::buttonOnColourId, accentColour);
-    button.setConnectedEdges (juce::Button::ConnectedOnLeft
-                              | juce::Button::ConnectedOnRight);
+    b.setClickingTogglesState (false);
+    b.setColour (juce::TextButton::buttonColourId,
+                 selected ? accent : buttonBg);
+    b.setColour (juce::TextButton::buttonOnColourId, accent);
+    b.setColour (juce::TextButton::textColourOffId,
+                 selected ? bg : white);
+    b.setColour (juce::TextButton::textColourOnId, bg);
+    b.setColour (juce::TextButton::outlineColourId, panel);
+    b.setMouseCursor (juce::MouseCursor::PointingHandCursor);
 }
 
-//==============================================================================
 void RrHarmonizerAudioProcessorEditor::updateModeButtons()
 {
-    const int mode = juce::jlimit (
-        0, 2,
-        (int) std::round (
-            processor.parameters.getRawParameterValue ("mode")->load() * 2.0f));
+    const int mode = juce::jlimit (0, 2, (int) std::round (
+        processor.parameters.getRawParameterValue ("mode")->load() * 2.0f));
 
     for (int i = 0; i < 3; ++i)
         styleButton (modeButtons[(size_t) i], i == mode);
@@ -509,10 +438,8 @@ void RrHarmonizerAudioProcessorEditor::updateModeButtons()
 
 void RrHarmonizerAudioProcessorEditor::updateVoiceButtons()
 {
-    const int voices = juce::jlimit (
-        1, 4,
-        1 + (int) std::round (
-            processor.parameters.getRawParameterValue ("voices")->load() * 3.0f));
+    const int voices = juce::jlimit (1, 4, 1 + (int) std::round (
+        processor.parameters.getRawParameterValue ("voices")->load() * 3.0f));
 
     for (int i = 0; i < 4; ++i)
         styleButton (countButtons[(size_t) i], i + 1 == voices);
@@ -520,47 +447,46 @@ void RrHarmonizerAudioProcessorEditor::updateVoiceButtons()
 
 void RrHarmonizerAudioProcessorEditor::updateLatencyButtons()
 {
-    const int latency = juce::jlimit (
-        0, 2,
-        (int) std::round (
-            processor.parameters.getRawParameterValue ("latency")->load() * 2.0f));
+    const int value = juce::jlimit (0, 2, (int) std::round (
+        processor.parameters.getRawParameterValue ("latency")->load() * 2.0f));
 
     for (int i = 0; i < 3; ++i)
-        styleButton (latencyButtons[(size_t) i], i == latency);
+        styleButton (latencyButtons[(size_t) i], i == value);
 }
 
 void RrHarmonizerAudioProcessorEditor::updateSourceButtons()
 {
-    const bool isManual = source.getSelectedId() == 2;
-    styleButton (manualButton, isManual);
-    styleButton (autoButton, ! isManual);
+    const bool manual = source.getSelectedId() == 2;
+    styleButton (manualButton, manual);
+    styleButton (autoButton, ! manual);
 }
 
 void RrHarmonizerAudioProcessorEditor::updatePitchReadout()
 {
-    const int midiNote = processor.getDetectedMidi();
+    const int midi = processor.getDetectedMidi();
 
-    if (midiNote >= 0 && midiNote <= 127)
+    if (midi >= 0 && midi <= 127)
     {
-        pitchReadout.setText (
-            "PITCH: " + midiNoteName (midiNote),
-            juce::dontSendNotification);
-        statusReadout.setText ("PITCH DETECTED", juce::dontSendNotification);
+        pitchReadout.setText ("PITCH: " + noteName (midi),
+                              juce::dontSendNotification);
+        statusReadout.setText ("PITCH DETECTED",
+                               juce::dontSendNotification);
     }
     else
     {
         pitchReadout.setText ("PITCH: --", juce::dontSendNotification);
-        statusReadout.setText ("WAITING FOR INPUT", juce::dontSendNotification);
+        statusReadout.setText ("WAITING FOR INPUT",
+                               juce::dontSendNotification);
     }
 }
 
-//==============================================================================
 void RrHarmonizerAudioProcessorEditor::saveUndoState()
 {
     if (restoringState)
         return;
 
     undoHistory.push_back (processor.parameters.copyState());
+
     if (undoHistory.size() > 64)
         undoHistory.erase (undoHistory.begin());
 
@@ -613,8 +539,8 @@ void RrHarmonizerAudioProcessorEditor::resetAllParameters()
 {
     saveUndoState();
 
-    for (auto* parameter : processor.getParameters())
-        parameter->setValueNotifyingHost (parameter->getDefaultValue());
+    for (auto* p : processor.getParameters())
+        p->setValueNotifyingHost (p->getDefaultValue());
 
     updateModeButtons();
     updateVoiceButtons();
@@ -623,221 +549,213 @@ void RrHarmonizerAudioProcessorEditor::resetAllParameters()
     updatePitchReadout();
 
     bypass.setButtonText ("BYPASS");
-    bypass.setColour (
-        juce::TextButton::buttonColourId, panelLightColour);
+    styleButton (bypass);
 }
 
-//==============================================================================
 void RrHarmonizerAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    g.fillAll (backgroundColour);
+    g.fillAll (bg);
 
-    const auto bounds = getLocalBounds().toFloat();
-
-    // Header strip
-    g.setColour (panelColour);
-    g.fillRoundedRectangle (
-        bounds.removeFromTop (72.0f).reduced (10.0f, 6.0f), 10.0f);
-
-    // Main section panels
     const int margin = 10;
-    const int top = 90;
-    const int bottom = getHeight() - 12;
-    const int contentHeight = bottom - top;
+    const int top = 112;
+    const int gap = 8;
+    const int panelHeight = getHeight() - top - margin;
 
-    const int inputWidth = juce::roundToInt (getWidth() * 0.25f);
-    const int harmonyWidth = juce::roundToInt (getWidth() * 0.25f);
-    const int voiceWidth = juce::roundToInt (getWidth() * 0.27f);
-    const int toneWidth = juce::roundToInt (getWidth() * 0.12f);
-    const int outputWidth = getWidth() - inputWidth - harmonyWidth
-                          - voiceWidth - toneWidth - margin * 6;
+    const int usableWidth = getWidth() - margin * 2 - gap * 4;
+    const int widths[] {
+        usableWidth * 23 / 100,
+        usableWidth * 25 / 100,
+        usableWidth * 27 / 100,
+        usableWidth * 12 / 100,
+        0
+    };
+
+    int remaining = usableWidth;
+    for (int i = 0; i < 4; ++i)
+        remaining -= widths[i];
+
+    const int panelWidths[] {
+        widths[0], widths[1], widths[2], widths[3], remaining
+    };
 
     int x = margin;
 
-    for (const int width : { inputWidth, harmonyWidth, voiceWidth,
-                             toneWidth, juce::jmax (100, outputWidth) })
+    for (int w : panelWidths)
     {
-        g.setColour (panelColour);
+        g.setColour (panel);
         g.fillRoundedRectangle (
-            (float) x, (float) top, (float) width,
-            (float) contentHeight, 10.0f);
-        x += width + margin;
+            (float) x, (float) top, (float) w,
+            (float) panelHeight, 10.0f);
+        x += w + gap;
     }
 
-    g.setColour (panelLightColour);
-    g.drawRoundedRectangle (
-        10.0f, 6.0f, (float) getWidth() - 20.0f, 60.0f, 10.0f, 1.0f);
-
-    // Small signal meter, driven by the processor's output-level readout.
-    const float levelValue = juce::jlimit (
-        0.0f, 1.0f, processor.getOutputLevel());
-
-    const int meterX = getWidth() - 128;
-    const int meterY = 43;
-    const int meterW = 100;
-    const int meterH = 8;
-
-    g.setColour (panelLightColour);
+    g.setColour (panel);
     g.fillRoundedRectangle (
-        (float) meterX, (float) meterY,
-        (float) meterW, (float) meterH, 4.0f);
+        10.0f, 8.0f, (float) getWidth() - 20.0f, 62.0f, 10.0f);
 
-    g.setColour (accentColour);
+    const float output = juce::jlimit (0.0f, 1.0f, processor.getOutputLevel());
+
+    const int meterX = getWidth() - 118;
+    const int meterY = 49;
+
+    g.setColour (buttonBg);
     g.fillRoundedRectangle (
-        (float) meterX, (float) meterY,
-        (float) meterW * levelValue, (float) meterH, 4.0f);
+        (float) meterX, (float) meterY, 90.0f, 7.0f, 3.5f);
+
+    g.setColour (accent);
+    g.fillRoundedRectangle (
+        (float) meterX, (float) meterY, 90.0f * output, 7.0f, 3.5f);
 }
 
-//==============================================================================
 void RrHarmonizerAudioProcessorEditor::resized()
 {
-    const int width = getWidth();
-    const int height = getHeight();
+    const int w = getWidth();
+    const int h = getHeight();
     const int margin = 10;
-    const int headerY = 10;
+    const int gap = 8;
+    const int top = 112;
+    const int panelH = h - top - margin;
+    const int usableW = w - margin * 2 - gap * 4;
 
-    title.setBounds (22, headerY, 280, 34);
-    pitchTab.setBounds (24, 43, 300, 20);
-    pitchReadout.setBounds (width - 280, 12, 150, 28);
-    statusReadout.setBounds (width - 280, 40, 160, 18);
+    const int inputW = usableW * 23 / 100;
+    const int harmonyW = usableW * 25 / 100;
+    const int voicesW = usableW * 27 / 100;
+    const int toneW = usableW * 12 / 100;
+    const int outputW = usableW - inputW - harmonyW - voicesW - toneW;
+
+    title.setBounds (22, 12, 280, 32);
+    pitchTab.setBounds (24, 44, 300, 18);
+    pitchReadout.setBounds (w - 290, 12, 170, 25);
+    statusReadout.setBounds (w - 290, 40, 165, 18);
 
     const int utilityY = 76;
     const int utilityH = 28;
-    const int utilityW = 78;
-    int utilityX = width - margin - utilityW;
+    const int utilityGap = 5;
+    const int utilityW = (w - 2 * margin - 6 * utilityGap) / 7;
 
-    resetWindow.setBounds (utilityX, utilityY, utilityW, utilityH);
-    utilityX -= utilityW + 5;
-    reset.setBounds (utilityX, utilityY, utilityW, utilityH);
-    utilityX -= utilityW + 5;
-    paste.setBounds (utilityX, utilityY, utilityW, utilityH);
-    utilityX -= utilityW + 5;
-    copy.setBounds (utilityX, utilityY, utilityW, utilityH);
-    utilityX -= utilityW + 5;
-    redo.setBounds (utilityX, utilityY, utilityW, utilityH);
-    utilityX -= utilityW + 5;
-    undo.setBounds (utilityX, utilityY, utilityW, utilityH);
-    utilityX -= utilityW + 5;
-    bypass.setBounds (utilityX, utilityY, utilityW, utilityH);
+    juce::TextButton* utility[] {
+        &bypass, &undo, &redo, &copy, &paste, &reset, &resetWindow
+    };
 
-    const int top = 116;
-    const int contentHeight = height - top - margin;
-    const int gap = 8;
-
-    const int inputW = juce::roundToInt (width * 0.235f);
-    const int harmonyW = juce::roundToInt (width * 0.245f);
-    const int voiceW = juce::roundToInt (width * 0.265f);
-    const int toneW = juce::roundToInt (width * 0.125f);
-    const int outputW = width - inputW - harmonyW - voiceW - toneW
-                      - margin * 2 - gap * 4;
+    for (int i = 0; i < 7; ++i)
+        utility[i]->setBounds (
+            margin + i * (utilityW + utilityGap),
+            utilityY, utilityW, utilityH);
 
     int x = margin;
+    const int inner = 12;
 
-    const int inputX = x;
-    sectionInput.setBounds (inputX + 12, top + 10, inputW - 24, 22);
-    key.setBounds (inputX + 12, top + 42, inputW - 24, 30);
-    scale.setBounds (inputX + 12, top + 78, inputW - 24, 30);
-    chordSourceLabel.setBounds (inputX + 12, top + 116, inputW - 24, 18);
-    source.setBounds (inputX + 12, top + 138, inputW - 24, 28);
-    autoButton.setBounds (inputX + 12, top + 174, (inputW - 30) / 2, 28);
+    // INPUT
+    sectionInput.setBounds (x + inner, top + 10, inputW - inner * 2, 22);
+    key.setBounds (x + inner, top + 42, inputW - inner * 2, 30);
+    scale.setBounds (x + inner, top + 80, inputW - inner * 2, 30);
+    chordSourceLabel.setBounds (x + inner, top + 122, inputW - inner * 2, 18);
+    source.setBounds (x + inner, top + 144, inputW - inner * 2, 30);
+
+    const int sourceGap = 5;
+    const int sourceW = (inputW - inner * 2 - sourceGap) / 2;
+
+    autoButton.setBounds (x + inner, top + 184, sourceW, 30);
     manualButton.setBounds (
-        inputX + 18 + (inputW - 30) / 2,
-        top + 174, (inputW - 30) / 2, 28);
-    sourcePlus.setBounds (inputX + inputW - 40, top + 10, 26, 22);
-    noPitch.setBounds (inputX + 12, top + 216, inputW - 24, 28);
+        x + inner + sourceW + sourceGap, top + 184, sourceW, 30);
+    sourcePlus.setBounds (x + inputW - 40, top + 10, 26, 24);
+    noPitch.setBounds (x + inner, top + 232, inputW - inner * 2, 36);
+
     x += inputW + gap;
 
-    const int harmonyX = x;
-    sectionHarmony.setBounds (harmonyX + 12, top + 10, harmonyW - 24, 22);
+    // HARMONY ENGINE
+    sectionHarmony.setBounds (x + inner, top + 10, harmonyW - inner * 2, 22);
 
-    const int modeButtonW = (harmonyW - 32) / 3;
+    const int modeGap = 5;
+    const int modeW = (harmonyW - inner * 2 - modeGap * 2) / 3;
+
     for (int i = 0; i < 3; ++i)
         modeButtons[(size_t) i].setBounds (
-            harmonyX + 12 + i * (modeButtonW + 4),
-            top + 40, modeButtonW, 28);
+            x + inner + i * (modeW + modeGap),
+            top + 42, modeW, 30);
 
-    sectionTone.setBounds (harmonyX + 12, top + 80, harmonyW - 24, 20);
+    sectionTone.setBounds (x + inner, top + 84, harmonyW - inner * 2, 20);
 
-    const int controlW = (harmonyW - 30) / 3;
-    const int controlH = juce::jmax (90, (contentHeight - 130) / 2);
+    const int controlGap = 5;
+    const int controlW = (harmonyW - inner * 2 - controlGap * 2) / 3;
+    const int controlY1 = top + 108;
+    const int controlY2 = top + panelH / 2;
 
-    gate.setBounds (harmonyX + 10, top + 104, controlW, controlH);
-    response.setBounds (harmonyX + 15 + controlW, top + 104, controlW, controlH);
-    pitchLock.setBounds (harmonyX + 20 + controlW * 2, top + 104,
-                         controlW, controlH);
+    const int controlH = juce::jmax (80, panelH / 3 - 10);
 
-    glide.setBounds (harmonyX + 10, top + 104 + controlH, controlW, controlH);
-    humanize.setBounds (harmonyX + 15 + controlW, top + 104 + controlH,
-                        controlW, controlH);
-    formant.setBounds (harmonyX + 20 + controlW * 2, top + 104 + controlH,
-                       controlW, controlH);
+    gate.setBounds (x + inner, controlY1, controlW, controlH);
+    response.setBounds (x + inner + controlW + controlGap,
+                        controlY1, controlW, controlH);
+    pitchLock.setBounds (x + inner + 2 * (controlW + controlGap),
+                         controlY1, controlW, controlH);
+
+    glide.setBounds (x + inner, controlY2, controlW, controlH);
+    humanize.setBounds (x + inner + controlW + controlGap,
+                        controlY2, controlW, controlH);
+    formant.setBounds (x + inner + 2 * (controlW + controlGap),
+                       controlY2, controlW, controlH);
 
     x += harmonyW + gap;
 
-    const int voiceX = x;
-    sectionVoices.setBounds (voiceX + 12, top + 10, voiceW - 24, 22);
+    // VOICE MIX
+    sectionVoices.setBounds (x + inner, top + 10, voicesW - inner * 2, 22);
 
-    const int countW = (voiceW - 32) / 4;
+    const int countGap = 5;
+    const int countW = (voicesW - inner * 2 - countGap * 3) / 4;
+
     for (int i = 0; i < 4; ++i)
         countButtons[(size_t) i].setBounds (
-            voiceX + 12 + i * (countW + 3), top + 40, countW, 27);
+            x + inner + i * (countW + countGap), top + 42, countW, 30);
 
-    noteHeading.setBounds (voiceX + 12, top + 76, voiceW - 24, 18);
+    noteHeading.setBounds (x + inner, top + 80, voicesW - inner * 2, 18);
 
     const int voiceGap = 5;
-    const int oneVoiceW = (voiceW - 24 - voiceGap * 3) / 4;
-    const int voiceTop = top + 96;
-    const int voiceBottom = top + contentHeight - 8;
-    const int availableVoiceH = voiceBottom - voiceTop;
+    const int oneW = (voicesW - inner * 2 - voiceGap * 3) / 4;
+    const int vTop = top + 104;
+    const int vH = panelH - 116;
 
     for (int i = 0; i < 4; ++i)
     {
-        const int vx = voiceX + 12 + i * (oneVoiceW + voiceGap);
+        const int vx = x + inner + i * (oneW + voiceGap);
 
-        voiceLabels[(size_t) i].setBounds (vx, voiceTop, oneVoiceW, 20);
-        intervalLabels[(size_t) i].setBounds (vx, voiceTop + 24, oneVoiceW, 20);
+        voiceLabels[(size_t) i].setBounds (vx, vTop, oneW, 22);
+        intervalLabels[(size_t) i].setBounds (vx, vTop + 25, oneW, 20);
 
-        intervalDown[(size_t) i].setBounds (vx, voiceTop + 48, 24, 23);
+        intervalDown[(size_t) i].setBounds (vx, vTop + 49, oneW / 2 - 2, 27);
         intervalUp[(size_t) i].setBounds (
-            vx + oneVoiceW - 24, voiceTop + 48, 24, 23);
+            vx + oneW / 2 + 2, vTop + 49, oneW / 2 - 2, 27);
 
-        interval[(size_t) i].setBounds (
-            vx, voiceTop + 76, oneVoiceW, 38);
-
-        level[(size_t) i].setBounds (
-            vx, voiceTop + 116, oneVoiceW, juce::jmax (70, availableVoiceH / 3));
-
-        pan[(size_t) i].setBounds (
-            vx, voiceTop + 116 + juce::jmax (70, availableVoiceH / 3),
-            oneVoiceW, 42);
-
-        noteLabels[(size_t) i].setBounds (
-            vx, voiceBottom - 20, oneVoiceW, 18);
+        interval[(size_t) i].setBounds (vx, vTop + 82, oneW, 34);
+        level[(size_t) i].setBounds (vx, vTop + 120, oneW, vH / 3);
+        pan[(size_t) i].setBounds (vx, vTop + 120 + vH / 3, oneW, 42);
+        noteLabels[(size_t) i].setBounds (vx, top + panelH - 24, oneW, 18);
     }
 
-    x += voiceW + gap;
+    x += voicesW + gap;
 
-    const int toneX = x;
-    sectionTone.setBounds (toneX + 10, top + 10, toneW - 20, 22);
-    consonants.setBounds (toneX + 5, top + 44, toneW - 10,
-                          juce::jmax (100, contentHeight / 3));
-    dry.setBounds (toneX + 5, top + 44 + juce::jmax (100, contentHeight / 3),
-                   toneW - 10, juce::jmax (100, contentHeight / 3));
-    harmony.setBounds (
-        toneX + 5, top + 44 + juce::jmax (100, contentHeight / 3) * 2,
-        toneW - 10, juce::jmax (100, contentHeight / 3));
+    // VOICE CHARACTER
+    sectionTone.setBounds (x + 8, top + 10, toneW - 16, 22);
+
+    const int toneInner = 5;
+    const int toneSliderH = (panelH - 54) / 3;
+
+    consonants.setBounds (x + toneInner, top + 38, toneW - toneInner * 2, toneSliderH);
+    dry.setBounds (x + toneInner, top + 42 + toneSliderH,
+                   toneW - toneInner * 2, toneSliderH);
+    harmony.setBounds (x + toneInner, top + 46 + toneSliderH * 2,
+                       toneW - toneInner * 2, toneSliderH);
 
     x += toneW + gap;
 
-    const int outputX = x;
-    sectionOutput.setBounds (outputX + 8, top + 10, outputW - 16, 22);
-    outHeading.setBounds (outputX + 8, top + 40, outputW - 16, 20);
+    // OUTPUT
+    sectionOutput.setBounds (x + 8, top + 10, outputW - 16, 22);
+    outHeading.setBounds (x + 8, top + 42, outputW - 16, 20);
 
-    latencyButtons[0].setBounds (outputX + 8, top + 72,
-                                 outputW - 16, 26);
-    latencyButtons[1].setBounds (outputX + 8, top + 103,
-                                 outputW - 16, 26);
-    latencyButtons[2].setBounds (outputX + 8, top + 134,
-                                 outputW - 16, 26);
+    const int latencyGap = 6;
+    const int latencyW = outputW - 16;
+
+    for (int i = 0; i < 3; ++i)
+        latencyButtons[(size_t) i].setBounds (
+            x + 8, top + 72 + i * (30 + latencyGap), latencyW, 30);
 }
 ```
