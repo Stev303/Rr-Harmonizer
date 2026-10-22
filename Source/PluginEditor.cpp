@@ -10,7 +10,7 @@ RrHarmonizerAudioProcessorEditor::RrHarmonizerAudioProcessorEditor
 
     title.setText ("Rr Harmonizer", juce::dontSendNotification);
     title.setJustificationType (juce::Justification::centredLeft);
-    title.setFont (juce::FontOptions (25.0f, "Bold"));
+    title.setFont (juce::FontOptions (25.0f).withStyle ("Bold"));
     addAndMakeVisible (title);
 
     reset.setButtonText ("RESET");
@@ -45,19 +45,14 @@ RrHarmonizerAudioProcessorEditor::RrHarmonizerAudioProcessorEditor
     setWantsKeyboardFocus (true);
 }
 
-RrHarmonizerAudioProcessorEditor::~RrHarmonizerAudioProcessorEditor()
-{
-}
-
 void RrHarmonizerAudioProcessorEditor::paint (juce::Graphics& g)
 {
     g.fillAll (juce::Colour (0xff101319));
 
     g.setColour (juce::Colour (0xff1b2029));
-    g.fillRoundedRectangle (12.0f, 12.0f,
-                            (float) getWidth() - 24.0f, 58.0f, 8.0f);
+    g.fillRoundedRectangle (
+        12.0f, 12.0f, (float) getWidth() - 24.0f, 58.0f, 8.0f);
 
-    g.setColour (juce::Colour (0xff242b36));
     const int top = 86;
     const int panelHeight = getHeight() - 190;
     const int gap = 12;
@@ -70,27 +65,31 @@ void RrHarmonizerAudioProcessorEditor::paint (juce::Graphics& g)
     for (int i = 0; i < names.size(); ++i)
     {
         const float x = 12.0f + i * (panelWidth + gap);
-        g.fillRoundedRectangle (x, (float) top,
-                                (float) panelWidth,
-                                (float) panelHeight, 8.0f);
+
+        g.setColour (juce::Colour (0xff242b36));
+        g.fillRoundedRectangle (
+            x, (float) top, (float) panelWidth,
+            (float) panelHeight, 8.0f);
+
         g.setColour (juce::Colour (0xffe3b86b));
-        g.setFont (juce::FontOptions (14.0f, "Bold"));
+        g.setFont (juce::FontOptions (14.0f).withStyle ("Bold"));
         g.drawText (names[i], (int) x + 12, top + 12,
                     panelWidth - 24, 24,
                     juce::Justification::centredLeft);
-        g.setColour (juce::Colour (0xff242b36));
     }
 
     g.setColour (juce::Colour (0xff1b2029));
-    g.fillRoundedRectangle (12.0f, (float) getHeight() - 88.0f,
-                            (float) getWidth() - 24.0f, 76.0f, 8.0f);
+    g.fillRoundedRectangle (
+        12.0f, (float) getHeight() - 88.0f,
+        (float) getWidth() - 24.0f, 76.0f, 8.0f);
 
     g.setColour (juce::Colour (0xff8f9aaa));
     g.setFont (juce::FontOptions (12.0f));
-    g.drawText ("PITCH LOCK     GLIDE     HUMANIZE     FORMANT"
-                "     CONSONANTS     DRY     HARMONY",
-                26, getHeight() - 64, getWidth() - 52, 28,
-                juce::Justification::centredLeft);
+    g.drawText (
+        "PITCH LOCK     GLIDE     HUMANIZE     FORMANT"
+        "     CONSONANTS     DRY     HARMONY",
+        26, getHeight() - 64, getWidth() - 52, 28,
+        juce::Justification::centredLeft);
 }
 
 void RrHarmonizerAudioProcessorEditor::resized()
