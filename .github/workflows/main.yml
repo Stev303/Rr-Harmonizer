@@ -1,0 +1,49 @@
+
+name: Build Rr Harmonizer VST3
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-vst3:
+    name: Build VST3 on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Checkout JUCE
+        uses: actions/checkout@v4
+        with:
+          repository: juce-framework/JUCE
+          ref: 8.0.8
+          path: JUCE
+
+      - name: Check project files
+        shell: pwsh
+        run: |
+          if (!(Test-Path "CMakeLists.txt")) {
+            throw "CMakeLists.txt tidak ditemukan di root repository."
+          }
+          if (!(Test-Path "Source/PluginProcessor.cpp")) {
+            throw "Source/PluginProcessor.cpp tidak ditemukan."
+          }
+          if (!(Test-Path "Source/PluginEditor.cpp")) {
+            throw "Source/PluginEditor.cpp tidak ditemukan."
+          }
+
+      - name: Configure CMake
+        run: cmake -S . -B build -A x64
+
+      - name: Build VST3
+        run: cmake --build build --config Release --target RrHarmonizer_VST3
+
+      - name: Upload VST3
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rr-Harmonizer-VST3-Windows
+          path: build/RrHarmonizer_artefacts/Release/VST3/
+          if-no-files-found: error
