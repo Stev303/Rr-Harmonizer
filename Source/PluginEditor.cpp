@@ -1,4 +1,3 @@
-```cpp
 #include "PluginEditor.h"
 
 namespace
@@ -51,7 +50,6 @@ RrHarmonizerAudioProcessorEditor::RrHarmonizerAudioProcessorEditor
     heading (sectionInput, "INPUT / KEY");
     heading (sectionHarmony, "HARMONY ENGINE");
     heading (sectionVoices, "VOICE MIX");
-    heading (sectionTone, "VOICE CHARACTER");
     heading (sectionOutput, "OUTPUT");
 
     pitchReadout.setText ("PITCH: --", juce::dontSendNotification);
@@ -423,7 +421,6 @@ void RrHarmonizerAudioProcessorEditor::styleButton
     b.setColour (juce::TextButton::textColourOffId,
                  selected ? bg : white);
     b.setColour (juce::TextButton::textColourOnId, bg);
-    b.setColour (juce::TextButton::outlineColourId, panel);
     b.setMouseCursor (juce::MouseCursor::PointingHandCursor);
 }
 
@@ -645,7 +642,6 @@ void RrHarmonizerAudioProcessorEditor::resized()
     int x = margin;
     const int inner = 12;
 
-    // INPUT
     sectionInput.setBounds (x + inner, top + 10, inputW - inner * 2, 22);
     key.setBounds (x + inner, top + 42, inputW - inner * 2, 30);
     scale.setBounds (x + inner, top + 80, inputW - inner * 2, 30);
@@ -663,7 +659,6 @@ void RrHarmonizerAudioProcessorEditor::resized()
 
     x += inputW + gap;
 
-    // HARMONY ENGINE
     sectionHarmony.setBounds (x + inner, top + 10, harmonyW - inner * 2, 22);
 
     const int modeGap = 5;
@@ -674,13 +669,10 @@ void RrHarmonizerAudioProcessorEditor::resized()
             x + inner + i * (modeW + modeGap),
             top + 42, modeW, 30);
 
-    sectionTone.setBounds (x + inner, top + 84, harmonyW - inner * 2, 20);
-
     const int controlGap = 5;
     const int controlW = (harmonyW - inner * 2 - controlGap * 2) / 3;
-    const int controlY1 = top + 108;
+    const int controlY1 = top + 84;
     const int controlY2 = top + panelH / 2;
-
     const int controlH = juce::jmax (80, panelH / 3 - 10);
 
     gate.setBounds (x + inner, controlY1, controlW, controlH);
@@ -697,7 +689,6 @@ void RrHarmonizerAudioProcessorEditor::resized()
 
     x += harmonyW + gap;
 
-    // VOICE MIX
     sectionVoices.setBounds (x + inner, top + 10, voicesW - inner * 2, 22);
 
     const int countGap = 5;
@@ -733,21 +724,18 @@ void RrHarmonizerAudioProcessorEditor::resized()
 
     x += voicesW + gap;
 
-    // VOICE CHARACTER
-    sectionTone.setBounds (x + 8, top + 10, toneW - 16, 22);
-
     const int toneInner = 5;
     const int toneSliderH = (panelH - 54) / 3;
 
-    consonants.setBounds (x + toneInner, top + 38, toneW - toneInner * 2, toneSliderH);
-    dry.setBounds (x + toneInner, top + 42 + toneSliderH,
+    consonants.setBounds (x + toneInner, top + 10,
+                          toneW - toneInner * 2, toneSliderH);
+    dry.setBounds (x + toneInner, top + 14 + toneSliderH,
                    toneW - toneInner * 2, toneSliderH);
-    harmony.setBounds (x + toneInner, top + 46 + toneSliderH * 2,
+    harmony.setBounds (x + toneInner, top + 18 + toneSliderH * 2,
                        toneW - toneInner * 2, toneSliderH);
 
     x += toneW + gap;
 
-    // OUTPUT
     sectionOutput.setBounds (x + 8, top + 10, outputW - 16, 22);
     outHeading.setBounds (x + 8, top + 42, outputW - 16, 20);
 
@@ -758,4 +746,3 @@ void RrHarmonizerAudioProcessorEditor::resized()
         latencyButtons[(size_t) i].setBounds (
             x + 8, top + 72 + i * (30 + latencyGap), latencyW, 30);
 }
-```
