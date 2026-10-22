@@ -1,0 +1,10 @@
+build/
+cmake-build-*/
+.vs/
+.idea/
+.DS_Store
+*.user
+*.suo
+*.vst3
+*.dll
+*.pdb
